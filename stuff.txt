@@ -1,0 +1,6 @@
+Refactoring and more
+
+- Game searching and collection is now handeld by the server
+- Visual refinement
+- Added h1, h2, and h3 support
+- Updated push.sh

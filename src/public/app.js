@@ -1,82 +1,34 @@
 const container = document.getElementById("games");
 
-async function loadGameList() {
-	const response = await fetch("/games.txt");
-
-	if (!response.ok) {
-		throw new Error("Failed to load games.txt");
-	}
-
-	const text = await response.text();
-
-	return text
-		.split("\n")
-		.map(line => line.trim())
-		.filter(line => line.length > 0);
-}
-
-// Accepts a game name, a Steam store URL (e.g. https://store.steampowered.com/app/1091500/Cyberpunk_2077/)
-// or a raw app ID (e.g. "1091500"), and normalizes it into either a search or a direct lookup.
-function parseSteamInput(input) {
-	const value = String(input).trim();
-
-	// Pure numeric ID
-	if (/^\d+$/.test(value)) {
-		return { type: "appid", appid: value };
-	}
-
-	// Steam store / community URLs containing an app id
-	const urlMatch = value.match(/(?:store\.steampowered\.com|steamcommunity\.com)\/app\/(\d+)/i);
-	if (urlMatch) {
-		return { type: "appid", appid: urlMatch[1] };
-	}
-
-	// Also tolerate "steam://store/1091500" style links
-	const protoMatch = value.match(/^steam:\/\/\w+\/(\d+)/i);
-	if (protoMatch) {
-		return { type: "appid", appid: protoMatch[1] };
-	}
-
-	return { type: "name", name: value };
-}
-
-async function searchSteam(input) {
-	const parsed = parseSteamInput(input);
-	const params = new URLSearchParams();
-	
-	console.log("TTTTTTTTTTT");
-	console.log(parsed.value);
-
-	if (parsed.type === "appid") {
-		params.set("appid", parsed.appid);
-	} else {
-		params.set("name", parsed.name);
-	}
-
-	const response = await fetch(`/api/search-steam?${params}`);
-
-	if (!response.ok) {
-		throw new Error("Steam search failed");
-	}
-
-	return await response.json();
-}
-
-
 /* ---------- render helpers ---------- */
 
-function renderHeader(text) {
+function renderHeader1(text) {
+	const h = document.createElement("h1");
+	h.textContent = text;
+	container.appendChild(h);
+}
+function renderHeader2(text) {
 	const h = document.createElement("h2");
-	h.textContent = text.replace(/^#\s*/, "");
+	h.textContent = text;
+	container.appendChild(h);
+}
+function renderHeader3(text) {
+	const h = document.createElement("h3");
+	h.textContent = text;
 	container.appendChild(h);
 }
 
-function renderSmallText(text) {
+function renderLabel(text) {
 	const div = document.createElement("div");
-	div.textContent = text.replace(/^-+\s*/, "");
-	div.style.fontSize = "0.95rem";
-	div.style.opacity = "0.8";
-	div.style.margin = "6px 0";
+	div.id = "label"
+	div.textContent = text;
+	container.appendChild(div);
+}
+
+function renderDeadline(text) {
+	const div = document.createElement("div");
+	div.id = "deadline";
+	div.textContent = text;
 	container.appendChild(div);
 }
 
@@ -90,6 +42,7 @@ function renderGameTitle(text) {
 
 function renderGameWidget(appid) {
 	const iframe = document.createElement("iframe");
+	iframe.id = "widget";
 	iframe.src = `https://store.steampowered.com/widget/${appid}/`;
 	iframe.width = "646";
 	iframe.height = "190";
@@ -98,48 +51,44 @@ function renderGameWidget(appid) {
 	container.appendChild(iframe);
 }
 
+function renderMissing(query) {
+	const div = document.createElement("div");
+	div.textContent = `Could not resolve game: ${query}`;
+	div.style.color = "crimson";
+	container.appendChild(div);
+}
+
 /* ---------- main loader ---------- */
 
 async function loadGames() {
-	const lines = await loadGameList();
+	const response = await fetch("/api/games");
 
-	for (const line of lines) {
+	if (!response.ok) {
+		throw new Error("Failed to load game list");
+	}
 
-		// comment line
-		if (line.startsWith("//")) {
-			continue;
-		}
+	const { items } = await response.json();
 
-		// header
-		if (line.startsWith("#")) {
-			renderHeader(line);
-			continue;
-		}
-
-		// small label
-		if (line.startsWith("-")) {
-			renderSmallText(line);
-			continue;
-		}
-
-		// steam game
-		try {
-			const results = await searchSteam(line);
-
-			if (!results.length) {
-				console.warn(`No result for ${line}`);
-				continue;
-			}
-
-			const game = results[0];
-
-			renderGameTitle(game.appName);
-			renderGameWidget(game.appid);
-		}
-		catch (err) {
-			console.error(`Failed to load ${line}`, err);
+	for (const item of items) {
+		if (item.kind === "header1") {
+			renderHeader1(item.text);
+		} else if (item.kind === "header2") {
+			renderHeader2(item.text);
+		} else if (item.kind === "header3") {
+			renderHeader3(item.text);
+		} else if (item.kind === "label") {
+			renderLabel(item.text);
+		} else if (item.kind === "deadline") {
+			renderDeadline(item.text);
+		} else if (item.game) {
+			//renderGameTitle(item.game.appName);
+			renderGameWidget(item.game.appid);
+		} else {
+			renderMissing(item.query);
 		}
 	}
 }
 
-loadGames();
+loadGames().catch(err => {
+	console.error("Failed to load games", err);
+});

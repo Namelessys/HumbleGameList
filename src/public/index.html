@@ -7,16 +7,48 @@
 	<style>
 		body {
 			font-family: sans-serif;
-			max-width: 700px;
-			margin: auto;
 			color: #DCDBD8;
 			background: #1B2838;
 		}
+		
+		#title {
+			font-size: 2.5rem; 
+			text-align: center;
+		}
 
 		#games {
+			max-width: 700px;
+			margin: auto;
+			
 			display: flex;
 			flex-direction: column;
 			gap: 0px;
+		}
+		
+		#games h1 {
+			margin: 8px 0;
+		}
+		#games h2 {
+			margin: 8px 0;
+		}
+		#games h3 {
+			margin: 8px 0;
+		}
+		
+		#deadline {
+			margin: 0px 0 12px;
+			font-size: 0.95rem;
+			opacity: 0.8;
+		}
+		
+		#label {
+			font-size: 0.95rem;
+			opacity: 0.8;
+			margin: 0px 0 6px;
+		}
+		
+		#widget {
+			margin: 6px;
 		}
 
 		iframe {
@@ -25,7 +57,7 @@
 	</style>
 </head>
 <body>
-	<h1>Humble Game List</h1>
+	<h1 id="title">--===== Humble Game List =====--</h1>
 
 	<div id="games"></div>
 
